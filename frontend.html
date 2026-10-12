@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fairview Lost &amp; Found Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cork: #b98455;
+    --cork-dark: #96683f;
+    --paper: #faf5e8;
+    --paper-shadow: #e9dfc7;
+    --ink: #26314a;
+    --ink-soft: #5b6478;
+    --pin-red: #b23a2e;
+    --tape: #f2e7b8;
+    --found-green: #4f7a5c;
+    --lost-amber: #b8752e;
+    --claimed-grey: #8a8578;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--cork);
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,0.06) 0, transparent 45%),
+      radial-gradient(circle at 80% 70%, rgba(0,0,0,0.07) 0, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(0,0,0,0.04) 0, transparent 60%);
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* ---------- Header plaque ---------- */
+  header{
+    text-align:center;
+    padding: 48px 20px 32px;
+  }
+  .plaque{
+    display:inline-block;
+    background: var(--paper);
+    padding: 22px 46px;
+    border-radius: 4px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(0,0,0,0.05);
+    transform: rotate(-1deg);
+    position:relative;
+  }
+  .plaque::before{
+    content:"";
+    position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+    width:18px; height:18px; border-radius:50%;
+    background: radial-gradient(circle at 35% 35%, #e5675a, var(--pin-red));
+    box-shadow: 0 3px 4px rgba(0,0,0,0.4);
+  }
+  h1{
+    font-family: 'Special Elite', monospace;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    margin: 0 0 6px;
+    letter-spacing: 0.5px;
+  }
+  .plaque p{
+    margin:0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  /* ---------- Stats strip ---------- */
+  .stats{
+    max-width: 900px;
+    margin: 0 auto 28px;
+    display:flex;
+    justify-content:center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 0 20px;
+  }
+  .stat{
+    background: var(--paper);
+    border-radius: 3px;
+    padding: 10px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    display:flex; align-items:baseline; gap:6px;
+  }
+  .stat b{ font-size: 1.05rem; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    max-width: 1100px;
+    margin: 0 auto 28px;
+    padding: 0 20px;
+    display:flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items:center;
+    justify-content: space-between;
+  }
+  .tabs{
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tab{
+    font-family: 'Special Elite', monospace;
+    font-size: 0.85rem;
+    background: var(--tape);
+    border: none;
+    padding: 8px 16px;
+    cursor:pointer;
+    border-radius: 2px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    transform: rotate(-1deg);
+    transition: transform .15s ease;
+  }
+  .tab:nth-child(even){ transform: rotate(1deg); }
+  .tab:hover{ transform: rotate(0) translateY(-2px); }
+  .tab.active{
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .toolbar-right{ display:flex; gap:10px; flex-wrap: wrap; }
+
+  #search{
+    font-family: 'Inter', sans-serif;
+    padding: 9px 14px;
+    border-radius: 3px;
+    border: none;
+    min-width: 200px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+  }
+
+  .report-btn{
+    font-family: 'Special Elite', monospace;
+    background: var(--pin-red);
+    color: var(--paper);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    letter-spacing: 0.3px;
+  }
+  .report-btn:hover{ filter: brightness(1.08); }
+
+  /* ---------- Board grid ---------- */
+  #board{
+    max-width: 1100px;
+    margin: 0 auto 60px;
+    padding: 0 20px;
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 34px 26px;
+  }
+
+  .card{
+    background: var(--paper);
+    border-radius: 3px;
+    padding: 18px 16px 16px;
+    position:relative;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .card:nth-child(3n+1){ transform: rotate(-2deg); }
+  .card:nth-child(3n+2){ transform: rotate(1.5deg); }
+  .card:nth-child(3n){ transform: rotate(-1deg); }
+  .card:hover{ transform: rotate(0) translateY(-4px); box-shadow: 0 14px 26px rgba(0,0,0,0.35); z-index:2; }
+
+  .card::before{
+    content:"";
+    position:absolute; top:-9px; left:50%; transform:translateX(-50%);
+    width:16px; height:16px; border-radius:50%;
+    background: radial-gradient(circle at 35% 35%, #f0f0f0, #b7b7b7);
+    box-shadow: 0 3px 4px rgba(0,0,0,0.4);
+  }
+
+  .card-icon{
+    font-size: 2rem;
+    display:block;
+    text-align:center;
+    margin-bottom: 8px;
+  }
+  .card h3{
+    font-family: 'Special Elite', monospace;
+    font-size: 1.02rem;
+    margin: 0 0 6px;
+    text-align:center;
+  }
+  .meta{
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    margin: 3px 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .badge{
+    display:inline-block;
+    margin: 10px auto 0;
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .badge-wrap{ text-align:center; }
+  .badge.lost{ background: var(--lost-amber); }
+  .badge.found{ background: var(--found-green); }
+  .badge.claimed{ background: var(--claimed-grey); }
+
+  .card-action{
+    width:100%;
+    margin-top: 12px;
+    padding: 8px;
+    border: none;
+    border-radius: 3px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .card-action:disabled{
+    background: var(--claimed-grey);
+    cursor: default;
+  }
+  .card-action:not(:disabled):hover{ background: var(--pin-red); }
+
+  .empty-note{
+    grid-column: 1 / -1;
+    text-align:center;
+    background: var(--paper);
+    padding: 30px;
+    border-radius: 4px;
+    font-family: 'Special Elite', monospace;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position: fixed; inset:0;
+    background: rgba(20,20,20,0.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .overlay.open{ display:flex; }
+
+  .modal{
+    background: var(--paper);
+    width: 100%; max-width: 420px;
+    border-radius: 5px;
+    padding: 26px 24px 22px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  .modal h2{
+    font-family: 'Special Elite', monospace;
+    margin: 0 0 4px;
+    font-size: 1.2rem;
+  }
+  .modal .sub{ color: var(--ink-soft); font-size: 0.82rem; margin-bottom: 16px; }
+
+  .modal label{
+    display:block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin: 12px 0 5px;
+  }
+  .modal input, .modal select{
+    width:100%;
+    padding: 9px 10px;
+    border-radius: 3px;
+    border: 1px solid var(--paper-shadow);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    background: #fff;
+  }
+
+  .toggle-row{ display:flex; gap:8px; margin-top: 6px; }
+  .toggle-row button{
+    flex:1;
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid var(--paper-shadow);
+    background: #fff;
+    cursor:pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .toggle-row button.selected.lost{ background: var(--lost-amber); color:#fff; border-color:transparent; }
+  .toggle-row button.selected.found{ background: var(--found-green); color:#fff; border-color:transparent; }
+
+  .modal-actions{
+    display:flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .modal-actions button{
+    flex:1;
+    padding: 10px;
+    border-radius: 3px;
+    border:none;
+    font-weight: 600;
+    cursor:pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-cancel{ background: var(--paper-shadow); color: var(--ink); }
+  .btn-submit{ background: var(--pin-red); color: #fff; }
+
+  footer{
+    text-align:center;
+    color: rgba(250,245,232,0.65);
+    font-size: 0.78rem;
+    padding: 0 20px 40px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  @media (max-width: 480px){
+    .toolbar{ flex-direction: column; align-items: stretch; }
+    .toolbar-right{ justify-content: space-between; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="plaque">
+    <h1>Fairview Lost &amp; Found</h1>
+    <p>pin it, spot it, claim it — campus notice board</p>
+  </div>
+</header>
+
+<div class="stats" id="stats"></div>
+
+<div class="toolbar">
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-filter="all">All</button>
+    <button class="tab" data-filter="lost">Lost</button>
+    <button class="tab" data-filter="found">Found</button>
+    <button class="tab" data-filter="claimed">Claimed</button>
+  </div>
+  <div class="toolbar-right">
+    <input id="search" type="text" placeholder="Search item, place, category…">
+    <button class="report-btn" id="openModal">+ Report an item</button>
+  </div>
+</div>
+
+<div id="board"></div>
+
+<footer>sample build — data resets on page reload · demo only</footer>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2>Report an item</h2>
+    <div class="sub">Add a flyer to the board. Takes 30 seconds.</div>
+
+    <label>This item is</label>
+    <div class="toggle-row">
+      <button type="button" id="toggleLost" class="selected lost">Lost</button>
+      <button type="button" id="toggleFound" class="found">Found</button>
+    </div>
+
+    <label for="fTitle">Item name</label>
+    <input id="fTitle" type="text" placeholder="e.g. Blue water bottle">
+
+    <label for="fCategory">Category</label>
+    <select id="fCategory">
+      <option>Electronics</option>
+      <option>Bag / Wallet</option>
+      <option>ID / Documents</option>
+      <option>Keys</option>
+      <option>Clothing</option>
+      <option>Books / Stationery</option>
+      <option>Other</option>
+    </select>
+
+    <label for="fLocation">Last seen location</label>
+    <input id="fLocation" type="text" placeholder="e.g. Library, 2nd floor">
+
+    <label for="fContact">Your contact (email/phone)</label>
+    <input id="fContact" type="text" placeholder="e.g. rahul.k@fairview.edu">
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelModal">Cancel</button>
+      <button class="btn-submit" id="submitModal">Pin to board</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const ICONS = {
+    "Electronics":"📱","Bag / Wallet":"🎒","ID / Documents":"🪪",
+    "Keys":"🔑","Clothing":"🧥","Books / Stationery":"📚","Other":"📦"
+  };
+
+  let items = [
+    { title:"Silver iPhone 13", category:"Electronics", location:"Cafeteria, table 4", date:"Jul 21", status:"found", contact:"priya.m@fairview.edu" },
+    { title:"Black leather wallet", category:"Bag / Wallet", location:"Bus stop near Gate 2", date:"Jul 20", status:"lost", contact:"arjun.s@fairview.edu" },
+    { title:"Campus ID card - R. Nair", category:"ID / Documents", location:"Library, ground floor", date:"Jul 22", status:"found", contact:"desk@fairview.edu" },
+    { title:"Bunch of keys w/ red keychain", category:"Keys", location:"Parking lot B", date:"Jul 19", status:"lost", contact:"karan.d@fairview.edu" },
+    { title:"Grey hoodie, size M", category:"Clothing", location:"Sports complex", date:"Jul 18", status:"claimed", contact:"—" },
+    { title:"Data Structures textbook", category:"Books / Stationery", location:"Room 214", date:"Jul 23", status:"found", contact:"nina.k@fairview.edu" },
+    { title:"Wired earphones, white", category:"Electronics", location:"Auditorium", date:"Jul 17", status:"lost", contact:"vikram.t@fairview.edu" },
+  ];
+
+  let currentFilter = "all";
+  let searchTerm = "";
+
+  const board = document.getElementById("board");
+  const statsEl = document.getElementById("stats");
+
+  function render(){
+    // stats
+    const total = items.length;
+    const lost = items.filter(i=>i.status==="lost").length;
+    const found = items.filter(i=>i.status==="found").length;
+    const claimed = items.filter(i=>i.status==="claimed").length;
+    statsEl.innerHTML = `
+      <div class="stat">📌 <b>${total}</b> total</div>
+      <div class="stat">🟠 <b>${lost}</b> lost</div>
+      <div class="stat">🟢 <b>${found}</b> found</div>
+      <div class="stat">⚪ <b>${claimed}</b> claimed</div>
+    `;
+
+    // filter + search
+    let list = items.filter(i => currentFilter === "all" || i.status === currentFilter);
+    if(searchTerm.trim()){
+      const t = searchTerm.toLowerCase();
+      list = list.filter(i =>
+        i.title.toLowerCase().includes(t) ||
+        i.category.toLowerCase().includes(t) ||
+        i.location.toLowerCase().includes(t)
+      );
+    }
+
+    if(list.length === 0){
+      board.innerHTML = `<div class="empty-note">No flyers match that search. Try another term, or pin a new one.</div>`;
+      return;
+    }
+
+    board.innerHTML = list.map((item, idx) => {
+      const realIdx = items.indexOf(item);
+      const icon = ICONS[item.category] || "📌";
+      const claimedAlready = item.status === "claimed";
+      const actionLabel = item.status === "lost" ? "I found this" : (item.status === "found" ? "This is mine" : "Resolved");
+      return `
+        <div class="card">
+          <span class="card-icon">${icon}</span>
+          <h3>${item.title}</h3>
+          <div class="meta"><span>${item.category}</span></div>
+          <div class="meta"><span>📍 ${item.location}</span></div>
+          <div class="meta"><span>🗓 ${item.date}</span></div>
+          <div class="badge-wrap"><span class="badge ${item.status}">${item.status}</span></div>
+          <button class="card-action" data-idx="${realIdx}" ${claimedAlready ? "disabled" : ""}>${actionLabel}</button>
+        </div>
+      `;
+    }).join("");
+  }
+
+  document.getElementById("tabs").addEventListener("click", (e)=>{
+    if(e.target.classList.contains("tab")){
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      e.target.classList.add("active");
+      currentFilter = e.target.dataset.filter;
+      render();
+    }
+  });
+
+  document.getElementById("search").addEventListener("input", (e)=>{
+    searchTerm = e.target.value;
+    render();
+  });
+
+  board.addEventListener("click", (e)=>{
+    if(e.target.classList.contains("card-action") && !e.target.disabled){
+      const idx = e.target.dataset.idx;
+      items[idx].status = "claimed";
+      render();
+    }
+  });
+
+  // ---------- Modal logic ----------
+  const overlay = document.getElementById("overlay");
+  let modalStatus = "lost";
+
+  document.getElementById("openModal").addEventListener("click", ()=> overlay.classList.add("open"));
+  document.getElementById("cancelModal").addEventListener("click", ()=> overlay.classList.remove("open"));
+  overlay.addEventListener("click", (e)=>{ if(e.target === overlay) overlay.classList.remove("open"); });
+
+  const toggleLost = document.getElementById("toggleLost");
+  const toggleFound = document.getElementById("toggleFound");
+  toggleLost.addEventListener("click", ()=>{
+    modalStatus = "lost";
+    toggleLost.classList.add("selected");
+    toggleFound.classList.remove("selected");
+  });
+  toggleFound.addEventListener("click", ()=>{
+    modalStatus = "found";
+    toggleFound.classList.add("selected");
+    toggleLost.classList.remove("selected");
+  });
+
+  document.getElementById("submitModal").addEventListener("click", ()=>{
+    const title = document.getElementById("fTitle").value.trim();
+    const category = document.getElementById("fCategory").value;
+    const location = document.getElementById("fLocation").value.trim();
+    const contact = document.getElementById("fContact").value.trim();
+
+    if(!title || !location){
+      alert("Add at least an item name and a location so people can find it.");
+      return;
+    }
+
+    items.unshift({
+      title, category, location,
+      date: "Today",
+      status: modalStatus,
+      contact: contact || "—"
+    });
+
+    // reset form
+    document.getElementById("fTitle").value = "";
+    document.getElementById("fLocation").value = "";
+    document.getElementById("fContact").value = "";
+    modalStatus = "lost";
+    toggleLost.classList.add("selected");
+    toggleFound.classList.remove("selected");
+
+    overlay.classList.remove("open");
+    currentFilter = "all";
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    document.querySelector('.tab[data-filter="all"]').classList.add("active");
+    render();
+  });
+
+  render();
+</script>
+
+</body>
+</html>
